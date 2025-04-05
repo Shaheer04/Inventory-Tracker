@@ -7,7 +7,7 @@ from core.security import get_password_hash, verify_password
 from core import limiter
 from database import create_db_and_tables, get_session, engine
 from models import User
-from api import stores_router, products_router, stock_router, users_router
+from api import stores_router, products_router, stock_router, users_router, reports_router
 
 app = FastAPI(title="Store Inventory API")
 
@@ -59,6 +59,11 @@ app.include_router(
     stock_router,
     prefix="/stores",
     tags=["Stock"]
+)
+app.include_router(
+    reports_router,
+    prefix="/reports",
+    tags=["Reports"]
 )
 
 @app.post("/generate-api-key")
