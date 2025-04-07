@@ -1,0 +1,19 @@
+FROM  python:3.13
+
+# Set the working directory in the container to /app
+WORKDIR /app
+
+# Install system dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Copy application code to the container
+COPY . .
+
+ENV DB_URL="postgresql://postgres:2003@localhost/Inventory"
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
