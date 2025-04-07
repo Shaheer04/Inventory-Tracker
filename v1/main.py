@@ -1,6 +1,6 @@
 
 from sqlmodel import Session
-from models import Product, StockMovement, CurrentStock, MovementType
+from models import Product, StockMovement, CurrentStock, MovementType, Store
 from database import engine, create_db_and_tables
 from fastapi import FastAPI
 
@@ -13,6 +13,15 @@ def on_startup():
 @app.get("/test")
 def test():
     return {"message": "API is working!"}
+
+
+@app.post("/stores")
+def create_store(store : Store):
+    with Session(engine) as session:
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+        return store
 
 @app.post("/products")
 def create_product(product: Product):
