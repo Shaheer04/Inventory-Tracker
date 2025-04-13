@@ -9,6 +9,10 @@ from database import create_db_and_tables, get_session, engine
 from models import User
 from api import stores_router, products_router, stock_router, users_router, reports_router, audit_logs_router
 from cache import redis_client
+from fastapi.middleware.cors import CORSMiddleware
+import asyncio
+from websockets import manager
+from locks import init_locks
 
 
 app = FastAPI(title="Store Inventory API")
@@ -16,6 +20,15 @@ app = FastAPI(title="Store Inventory API")
 # Setup rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Setup CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create tables on startup
 @app.on_event("startup")
@@ -44,34 +57,87 @@ def on_startup():
 
 # Cache invalidation middleware
 @app.middleware("http")
-async def cache_control_middleware(request: Request, call_next):
+async def cache_and_events_middleware(request: Request, call_next):
     response = await call_next(request)
     
-    # Invalidate cache on write operations (POST, PUT, DELETE)
+    # Invalidate cache and broadcast events on write operations
     if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
-        # Extract path to determine which cache keys to invalidate
         path = request.url.path
+        
+        # Extract store_id from path if present
+        store_id = None
+        if "/stores/" in path:
+            path_parts = path.split("/")
+            try:
+                stores_index = path_parts.index("stores")
+                if len(path_parts) > stores_index + 1:
+                    potential_id = path_parts[stores_index + 1]
+                    if potential_id.isdigit():
+                        store_id = int(potential_id)
+            except ValueError:
+                pass
         
         # Clear specific cache keys based on path
         if "stores" in path:
             keys = redis_client.keys("*stores*")
             if keys:
                 redis_client.delete(*keys)
+            # Broadcast update to WebSocket clients
+            if store_id:
+                event_data = {"type": "store_update", "store_id": store_id}
+                asyncio.create_task(manager.broadcast_to_store(store_id, event_data))
+            else:
+                event_data = {"type": "stores_update"}
+                asyncio.create_task(manager.broadcast_global(event_data))
+        
         elif "products" in path:
             keys = redis_client.keys("*products*")
             if keys:
                 redis_client.delete(*keys)
+            # Broadcast product update
+            event_data = {"type": "products_update"}
+            asyncio.create_task(manager.broadcast_global(event_data))
+        
         elif "stock" in path:
             keys = redis_client.keys("*stock*")
             if keys:
                 redis_client.delete(*keys)
+            # Broadcast stock update
+            if store_id:
+                event_data = {"type": "stock_update", "store_id": store_id}
+                asyncio.create_task(manager.broadcast_to_store(store_id, event_data))
+        
         elif "users" in path:
             keys = redis_client.keys("*users*")
             if keys:
                 redis_client.delete(*keys)
     
     return response
-        
+
+# WebSocket endpoint for real-time stock updates
+@app.websocket("/ws/stock-updates")
+async def stock_updates(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+
+# WebSocket endpoint for store-specific stock updates
+@app.websocket("/ws/stores/{store_id}/stock-updates")
+async def store_stock_updates(websocket: WebSocket, store_id: int):
+    await manager.connect(websocket, store_id)
+    try:
+        while True:
+            # Keep connection alive
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, store_id)
+
+
 # Include routers
 app.include_router(
     users_router,
