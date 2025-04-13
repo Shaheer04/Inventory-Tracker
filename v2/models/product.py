@@ -10,7 +10,11 @@ class Product(SQLModel, TimestampMixin, table=True):
     category : str = Field(default=None)
     unit_price: float = Field(default=0.0)
     is_active: bool = Field(default=True)
+    manufacturer: Optional[str] = None
+    barcode: Optional[str] = Field(default=None, index=True)
+    weight: Optional[float] = None
     
     # Relationships
     store_stock: List["StoreStock"] = Relationship(back_populates="product")
     movements: List["StockMovement"] = Relationship(back_populates="product")
+    supply_records: List["SupplyRecord"] = Relationship(back_populates="product")
