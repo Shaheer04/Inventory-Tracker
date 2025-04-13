@@ -28,7 +28,7 @@ class SupplyRecord(SQLModel, TimestampMixin, table=True):
     status: str = Field(default="ordered")  # ordered, delivered, cancelled
     
     # Relationships
-    supplier: "Supplier" = Relationship(back_populates="supply_records")
+    supplier: Supplier = Relationship(back_populates="supply_records")
     product: "Product" = Relationship(back_populates="supply_records")
     store: "Store" = Relationship(back_populates="supply_records")
 

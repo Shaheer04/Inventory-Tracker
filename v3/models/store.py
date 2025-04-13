@@ -1,6 +1,8 @@
 from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
 from .base import TimestampMixin
+from datetime import datetime   
+
 
 class Store(SQLModel, TimestampMixin, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
