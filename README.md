@@ -1,4 +1,5 @@
 # 📌 Project Overview
+
 This Store Inventory API is designed to solve the challenge of inventory tracking across multiple retail stores. It provides a comprehensive solution for tracking product stock-ins, sales, and manual removals, enabling real-time visibility to prevent stockouts and overstocking.
 
 The system is architected to scale from a single kiryana store to thousands of stores with built-in audit capabilities, designed for high performance, scalability, and reliability to support high-volume retail operations.
@@ -53,7 +54,7 @@ The system is architected to scale from a single kiryana store to thousands of s
 
 - StockMovement
 
-- Current Stock 
+- Current Stock
 
 ### Endpoints v1:
 
@@ -91,10 +92,11 @@ The system is architected to scale from a single kiryana store to thousands of s
 
 - Enhanced Product model with additional attributes
 
-- Addded Store Specific Stock Model
+- Added Store Specific Stock Model
+
+- Added Supplier and SupplyRecord Model
 
 - User model with role based permission for authentication
-
 
 ### Endpoints v2:
 
@@ -120,7 +122,6 @@ The system is architected to scale from a single kiryana store to thousands of s
 
 - Query optimization for store-specific reporting
 
-
 ## Stage 3: Scalable Solution
 
 - Horizontally scalable architecture
@@ -133,7 +134,9 @@ The system is architected to scale from a single kiryana store to thousands of s
 
 - SQLModel ORM continues to provide database abstraction with optimized queries
 
-- Docker for scaliblity 
+- Docker for scaliblity
+
+- Websocket for updates
 
 ### Data Models v3:
 
@@ -149,7 +152,6 @@ The system is architected to scale from a single kiryana store to thousands of s
 
 - GET/POST /audit - Audit log management
 
-
 ### Design Decisions:
 
 - SQLModel ORM's consistent API allows for seamless scaling without code refactoring
@@ -162,6 +164,7 @@ The system is architected to scale from a single kiryana store to thousands of s
 
 - Docker Containerization for deplomyment scaliblity
 
+- WebSocket for near real time stock sync
 
 # 🔒 Security Considerations
 
@@ -198,12 +201,15 @@ The system is architected to scale from a single kiryana store to thousands of s
 `cd inventory-tracker`
 
 ## Install dependencies
+
 `pip install -r requirements.txt`
 
 ### Set up environment variables
+
 `cp .env.example .env`
 
 Edit .env with your configuration
 
 ## Run development server
+
 `uvicorn main:app --reload`
